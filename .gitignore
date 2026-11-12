@@ -1,0 +1,12 @@
+.gradle/
+.idea/
+.kotlin/
+**/build/
+local.properties
+*.iml
+*.jks
+*.keystore
+*.env
+/mission-check.jar
+hs_err_pid*.log
+replay_pid*.log
