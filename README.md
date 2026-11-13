@@ -4,6 +4,8 @@
 
 ## 데스크톱에서 실행
 
+공모전 제출용 서명 APK는 [apk/비상_Carlector_release.apk](apk/%EB%B9%84%EC%83%81_Carlector_release.apk)에서 받을 수 있습니다. Pleos Connect v2.1.0 API 34의 2560×1440 테스트 화면에서 새로 설치해 대시보드 실행과 주차 신호 수신을 확인했습니다. 차량 관리 미션의 모의 입력 시연에는 debug 빌드를 사용했습니다.
+
 1. Android Studio로 기존 Carlector 프로젝트를 엽니다. Gradle JDK 21과 Android SDK Platform 35를 설정하고 동기화합니다.
 2. Device Manager에서 Pleos Connect API 34 AVD를 실행하고 홈 화면이 표시될 때까지 기다립니다.
 3. 상단 기기 목록에서 Pleos AVD를 선택하고 `app`을 실행합니다. 권한 요청이 표시되면 속도와 주행거리 읽기를 허용합니다.
