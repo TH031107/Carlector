@@ -1,11 +1,8 @@
 package com.drivedex.prototype
 
 import android.app.Activity
-import android.graphics.Color
 import android.os.Bundle
 import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.content.pm.PackageManager
 import android.os.SystemClock
@@ -13,7 +10,7 @@ import java.time.LocalDate
 
 class MainActivity : Activity() {
     private lateinit var store: GameStore
-    private lateinit var body: LinearLayout
+    private lateinit var dashboard: CarlectorDashboard
     private val engine = MissionEngine()
     private var state = GameState()
     private var reading: VehicleReading? = null
@@ -26,7 +23,6 @@ class MainActivity : Activity() {
     private var lastCheckpoint = 0L
     private var checkpointPending = false
     private var requestedPermissions = false
-    private lateinit var scroll: ScrollView
     private var notice = "개발용 모의 신호로 체험할 수 있습니다."
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,55 +105,19 @@ class MainActivity : Activity() {
     }
 
     private fun render() {
-        val scrollY = if (::scroll.isInitialized) scroll.scrollY else 0
-        body = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(28, 32, 28, 32)
-            setBackgroundColor(Color.rgb(244, 247, 251))
+        if (!::dashboard.isInitialized) {
+            dashboard = CarlectorDashboard(this, automotive)
+            setContentView(dashboard)
         }
-        scroll = ScrollView(this).apply { addView(body) }
-        setContentView(scroll)
-        if (scrollY > 0) scroll.post { scroll.scrollTo(0, scrollY) }
-        text("Carlector", 30f)
-        text("좋은 운전 습관이 나만의 컬렉션이 된다.", 18f)
-        text(if (automotive) "AAOS 차량 신호 모드" else "DEMO · 모의 차량 신호", 16f)
-        text("티켓 ${state.tickets}장", 24f)
-        text(notice, 18f)
-        val parked = reading?.parked == true
-        text(if (parked) "P단 · 속도 0 · 주차 확인" else "주차 확인 후 운행 티켓을 적립합니다.")
-        text("오늘 누적 · 이동 ${engine.progress.movingMs / 60_000}분 / ${"%.1f".format(engine.progress.distanceM / 1000)}km")
-        text("기준 10분 및 5km · 미션별 하루 1회 · 하루 3장, 주간 21장 상한")
-        val day = LocalDate.now().toString()
-        text("오늘 운행 ${if ("$day/trip" in state.paid) "지급 완료" else "진행 전"} · 관리 ${if ("$day/care" in state.paid) "지급 완료" else "진행 전"}")
-        text("워셔액 ${when (reading?.washerLow) { true -> "부족 경고"; false -> "경고 없음"; null -> "확인 불가" }}")
-
-        if (automotive) {
-            for (item in CareItem.entries.filter { it != CareItem.WASHER }) {
-                val status = when (reading?.careWarnings?.get(item)) {
-                    true -> "경고 · 차량 안내를 확인해 주세요"
-                    false -> "경고 없음"
-                    null -> "확인 불가"
-                }
-                text("${item.label} $status")
-            }
-            val now = SystemClock.elapsedRealtime()
-            val indicators = careSignals?.indicators(now)
-            text("계기판 표시등 " + when {
-                indicators == null -> "확인 불가"
-                indicators.isEmpty() -> "활성 표시등 없음"
-                else -> indicators.joinToString()
-            })
-            text("출력 제한 ${when (careSignals?.powerDown(now)) {
-                true -> "경고 · 차량 안내를 확인해 주세요"
-                false -> "경고 없음"
-                null -> "확인 불가"
-            }}")
-            val sample = reading
-            text("속도 ${sample?.speedMps?.let { "%.1f km/h".format(it * 3.6) } ?: "조회 불가"}")
-            text("기어 ${sample?.gear ?: Gear.UNKNOWN} · UX 제한 ${sample?.uxRestricted ?: "조회 불가"}")
-            text("누적 계기판 거리 ${sample?.odometerM?.let { "%.3f km".format(it / 1000) } ?: "조회 불가"}")
+        val now = SystemClock.elapsedRealtime()
+        dashboard.show(
+            state, LocalDate.now().toString(), reading, notice,
+            careSignals?.indicators(now), careSignals?.powerDown(now)
+        )
+        if (BuildConfig.DEBUG && !automotive) {
+            dashboard.demoControls.removeAllViews()
+            developerControls()
         }
-        if (BuildConfig.DEBUG && !automotive) developerControls()
     }
 
     private fun developerControls() {
@@ -197,13 +157,13 @@ class MainActivity : Activity() {
     private fun text(value: String, size: Float = 16f): TextView = TextView(this).apply {
         text = value
         textSize = size
-        setTextColor(Color.rgb(25, 40, 60))
+        setTextColor(0xFF172923.toInt())
         setPadding(0, 12, 0, 12)
-        body.addView(this)
+        dashboard.demoControls.addView(this)
     }
 
     private fun button(label: String, enabled: Boolean, action: () -> Unit) {
-        body.addView(Button(this).apply {
+        dashboard.demoControls.addView(Button(this).apply {
             text = label
             isEnabled = enabled
             minHeight = 64
